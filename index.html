@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מחשבון הדפסה</title>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
+      --brand:#2563eb; --brand-ink:#fff; --ok:#16a34a; --warn:#c2410c;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Assistant',system-ui,Arial,sans-serif}
+    h1,h2,h3{margin:0 0 8px}
+    /* רוחב מוקטן ~30% */
+    .wrap{max-width:700px;margin:24px auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px #00000010;padding:16px}
+    label{display:block;font-weight:600;margin-top:10px}
+    select,input[type="number"],button{font-family:inherit;font-size:16px}
+    select,input[type="number"]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+    .row{display:grid;grid-template-columns:1fr 120px 36px;gap:8px;align-items:end}
+    .btn{border:none;border-radius:10px;padding:12px 14px;cursor:pointer}
+    .btn.brand{background:var(--brand);color:var(--brand-ink);font-weight:700}
+    .btn.ghost{background:#fff;border:1px solid var(--line)}
+    .btn.icon{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:#fff}
+    .btn.inline{padding:8px 10px;border-radius:8px}
+    .sub{color:var(--muted);font-size:14px}
+    .sub-lg{font-size:16px;font-weight:600}
+    .rows{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .divider{height:1px;background:var(--line);margin:12px 0}
+    .summary h3{margin-top:4px}
+    .kpi{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:12px 0}
+    .pill{border:1px solid var(--line);padding:10px;border-radius:12px;background:#fff}
+    .ok{color:var(--ok)}
+    .muted{color:var(--muted)}
+    /* פס התקדמות – כהה משמאל, בהיר מימין */
+    .progress{height:16px;background:#e8f5e9;border-radius:999px;position:relative;overflow:hidden}
+    .progress>i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#16a34a,#bbf7d0);}    
+    .price-line{display:flex;justify-content:space-between;gap:8px;margin:6px 0}
+    .total{display:flex;justify-content:space-between;align-items:baseline;margin:8px 0 10px;font-weight:700}
+    .total .mono{font-size:20px}
+    .note{font-size:13px;color:var(--muted)}
+    .note-lg{font-size:16px}
+    /* Alert (red) for minimum notice */
+    .alert{display:flex;gap:8px;align-items:flex-start;color:#dc2626;font-size:16px;font-weight:600}
+    .alert .ico{font-size:18px;line-height:1;margin-top:2px}
+    .alert .text{font-weight:600}
+    .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .right{margin-inline-start:auto}
+    .mono{font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>מחשבון מחיר הדפסה</h1>
+
+    <section class="card">
+      <div class="toolbar">
+        <h2 style="margin-inline-end:auto">הגדרות והזמנה</h2>
+        <button id="resetAll" class="btn ghost">איפוס</button>
+      </div>
+
+      <label>סוג נייר</label>
+      <select id="paper"></select>
+      <div class="sub" id="paperInfo" style="display:none"></div>
+
+      <label style="margin-top:14px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="projectMode" />
+        מחשב כהזמנת פרויקט אחת (תמחור לפי מ״ר לסך הכל; אין מינימום יח׳)
+      </label>
+
+      <div class="divider"></div>
+
+      <div class="toolbar">
+        <h3 style="margin-inline-end:auto">שורות ההדפסה</h3>
+        <button id="addRow" class="btn ghost">+ הוסף שורה</button>
+      </div>
+      <div class="sub">כל שורה היא בחירה מרשימת הגדלים. גדלים המסומנים ב‑<b>*</b> – מינימום הזמנה 4 יח׳.</div>
+      <div id="rows" class="rows"></div>
+
+      <div class="divider"></div>
+
+      <div class="summary">
+        <h3>סיכום</h3>
+        <div class="kpi">
+          <div class="pill">
+            <div class="sub">מחיר בסיס למ"ר</div>
+            <div class="mono" id="kpiSqmPrice">—</div>
+            <div class="sub" id="kpiPaperName"></div>
+          </div>
+          <div class="pill">
+            <div class="sub">סה"כ שטח</div>
+            <div class="mono" id="kpiSqm">0.00 מ"ר</div>
+          </div>
+          <div class="pill">
+            <div class="sub">סה"כ יחידות</div>
+            <div class="mono" id="kpiUnits">0</div>
+          </div>
+        </div>
+
+        <div id="minNotice" class="note" style="margin:6px 0"></div>
+
+        <div class="sub sub-lg" style="margin:8px 0 4px">התקדמות לדיל של 1 מ"ר</div>
+        <div class="progress" aria-label='התקדמות ל-1 מ"ר'><i id="progressBar"></i></div>
+        <div id="progressHint" class="note note-lg" style="margin-top:6px"></div>
+
+        <div class="divider"></div>
+        <div id="pricesArea"></div>
+        <div id="tierLine" class="note note-lg" style="margin-top:6px"></div>
+
+        <div class="divider"></div>
+
+        <div class="flex" style="justify-content:center">
+          <button class="btn brand" id="shareWA">שלח הצעה לוואטסאפ</button>
+        </div>
+        <div class="note" style="text-align:center;margin-top:6px">הנתונים נשמרים מקומית במכשיר שלך.</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  (function(){
+    if (window.__PRINT_CALC_SINGLETON__ && window.__PRINT_CALC_SINGLETON__.initialized) return;
+    window.__PRINT_CALC_SINGLETON__ = { initialized: true, version: 'prod-1.0' };
+
+    // ======= CONFIG =======
+    const CONFIG = {
+      currency: '₪',
+      sqmDealThreshold: 1, // מ"ר
+      papers: [
+        { id:'enhance-matt', name:'Enhance Matt Paper', pricePerSqm:314, tiers:[ {min:2, pct:5},{min:5, pct:10},{min:10, pct:15} ] },
+        { id:'epson-luster', name:'Epson Premium Luster', pricePerSqm:354, tiers:[ {min:2, pct:5},{min:5, pct:10},{min:10, pct:15} ] },
+        { id:'canson-etching-rag', name:'Canson Etching Rag', pricePerSqm:648, tiers:[ {min:3, pct:5},{min:7, pct:10} ] },
+        { id:'canson-rag-baryta', name:'Canson Rag Baryta', pricePerSqm:608, tiers:[ {min:3, pct:5},{min:7, pct:10} ] },
+        { id:'shil-metallic-pearl', name:'Shil Metallic Pearl', pricePerSqm:474, tiers:[ {min:2, pct:5},{min:5, pct:10} ] },
+      ],
+      sizes: [
+        // ללא "מותאם אישית" – רק פריסטים
+        ['20×30 ס"מ',20,30,1.8,4], ['25×35 ס"מ',25,35,1.9,4], ['30×40 ס"מ',30,40,1.7,4], ['30×30 ס"מ',30,30,1.7,4], ['30×45 ס"מ',30,45,1.7,4],
+        ['35×45 ס"מ',35,45,1.6,4], ['35×50 ס"מ',35,50,1.6,4], ['40×40 ס"מ',40,40,1.6,4], ['40×50 ס"מ',40,50,1.5,4],
+        // 40×55 ומעלה ללא מינימום 4
+        ['40×55 ס"מ',40,55,1.5], ['40×60 ס"מ',40,60,1.5], ['40×65 ס"מ',40,65,1.4], ['50×50 ס"מ',50,50,1.4], ['50×60 ס"מ',50,60,1.4], ['50×70 ס"מ',50,70,1.3],
+        ['50×80 ס"מ',50,80,1.3], ['50×90 ס"מ',50,90,1.2], ['50×100 ס"מ',50,100,1.2], ['50×120 ס"מ',50,120,1.2], ['60×60 ס"מ',60,60,1.3],
+        ['60×70 ס"מ',60,70,1.2], ['60×80 ס"מ',60,80,1.2], ['60×90 ס"מ',60,90,1.2], ['60×100 ס"מ',60,100,1.1], ['60×120 ס"מ',60,120,1.1],
+        ['70×70 ס"מ',70,70,1.2], ['70×80 ס"מ',70,80,1.2], ['70×90 ס"מ',70,90,1.1], ['70×100 ס"מ',70,100,1.1], ['70×120 ס"מ',70,120,1.2],
+        ['80×80 ס"מ',80,80,1.1], ['80×100 ס"מ',80,100,1.0], ['80×120 ס"מ',80,120,1.1], ['90×90 ס"מ',90,90,1.2], ['90×100 ס"מ',90,100,1.1],
+        ['90×120 ס"מ',90,120,1.1], ['90×140 ס"מ',90,140,1.0], ['100×100 ס"מ',100,100,1.0], ['100×120 ס"מ',100,120,1.0], ['100×130 ס"מ',100,130,1.0],
+        ['100×140 ס"מ',100,140,1.0], ['100×150 ס"מ',100,150,1.0], ['100×170 ס"מ',100,170,1.0], ['100×200 ס"מ',100,200,1.0],
+      ],
+      addons: [],
+      bleedCm: 0,
+    };
+
+    // ======= STATE =======
+    const DEFAULT_STATE = () => ({
+      paperId: 'epson-luster',
+      projectMode: false,
+      rows: [], // { sizeKey, qty }
+    });
+    const State = DEFAULT_STATE();
+
+    // ======= UTILS =======
+    const el = sel => document.querySelector(sel);
+    const fmtCurrency = n => new Intl.NumberFormat('he-IL').format(n);
+    const sqmOf = (wCm,hCm) => ((wCm + CONFIG.bleedCm) * (hCm + CONFIG.bleedCm)) / 10000;
+    const findPaper = id => CONFIG.papers.find(p=>p.id===id);
+    const getTierDiscountPct = (paper,totalSqm)=>{ let pct=0; (paper.tiers||[]).forEach(t=>{ if(totalSqm>=t.min) pct=Math.max(pct,t.pct)}); return pct; };
+
+    const money = n => `${fmtCurrency(n)} ${CONFIG.currency}`;
+    const setText = (sel, txt) => { const e = el(sel); if(e) e.textContent = txt; };
+    let __rowsDelegationBound = false;
+
+    // --- per‑unit price helpers for option labels ---
+    function unitPriceForPreset(s, paper){ return Math.round(paper.pricePerSqm * sqmOf(s.w, s.h) * s.f); }
+    function optionLabelWithPrice(s, paper){ const up = unitPriceForPreset(s, paper); return `${s.label} — ${fmtCurrency(up)} ${CONFIG.currency} ליח׳`; }
+
+    // פריסטים + כוכבית לגדלים עם מינימום
+    const PRESETS = CONFIG.sizes.map(([label,w,h,f,minQty])=>{
+      const key = `${w}x${h}`;
+      const showStar = (minQty && minQty>0);
+      const displayLabel = `${label}${showStar?' *':''}`;
+      return {key,label:displayLabel,w,h,f,minQty:minQty||0};
+    });
+    const PRESET_MAP = Object.fromEntries(PRESETS.map(s=>[s.key,s]));
+
+    // ======= INIT UI =======
+    function initUI(){
+      const paperSel = el('#paper');
+      paperSel.innerHTML = CONFIG.papers.map(p=>`<option value="${p.id}">${p.name} (${p.pricePerSqm} ${CONFIG.currency} למ״ר)</option>`).join('');
+      paperSel.value = State.paperId;
+      paperSel.addEventListener('change',()=>{ State.paperId = paperSel.value; saveAndRender(); });
+
+      el('#addRow').addEventListener('click',()=>{ addRow(); saveAndRender(); });
+      el('#projectMode').checked = State.projectMode;
+      el('#projectMode').addEventListener('change', (e)=>{ State.projectMode = e.target.checked; saveAndRender(); });
+
+      el('#resetAll').addEventListener('click', resetAll);
+      el('#shareWA').addEventListener('click', shareWhatsApp);
+
+      if(!State.rows.length){ addRow(); }
+      render();
+    }
+
+    function addRow(){
+      const first = PRESETS[0]; // 20×30
+      State.rows.push({ sizeKey:first.key, qty:1 });
+    }
+    function removeRow(idx){ State.rows.splice(idx,1); saveAndRender(); }
+
+    function rowTemplate(row,idx,paper){
+      const presetOptions = PRESETS.map(s=>`<option value="${s.key}" ${row.sizeKey===s.key?'selected':''}>${optionLabelWithPrice(s, paper)}</option>`).join('');
+      return `
+        <div class="row" data-idx="${idx}">
+          <div>
+            <label>בחרו גודל</label>
+            <select data-field="sizeKey">${presetOptions}</select>
+          </div>
+          <div>
+            <label>כמות</label>
+            <input class="qty" type="number" min="1" step="1" data-field="qty" value="${row.qty}">
+          </div>
+          <div>
+            <button class="btn icon" title="מחק" data-del="${idx}">✕</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindRowEvents(){
+      const container = el('#rows');
+      if(!container || __rowsDelegationBound) return; // bind once
+      __rowsDelegationBound = true;
+
+      container.addEventListener('change', (ev)=>{
+        const ctrl = ev.target.closest('[data-field]');
+        if(!ctrl) return;
+        const rowEl = ev.target.closest('.row');
+        if(!rowEl) return;
+        const idx = +rowEl.dataset.idx;
+        const field = ctrl.dataset.field;
+        if(field==='sizeKey'){
+          State.rows[idx].sizeKey = ctrl.value;
+        } else if(field==='qty'){
+          State.rows[idx].qty = Math.max(1, Math.round(+ctrl.value||1));
+          ctrl.value = State.rows[idx].qty;
+        }
+        saveAndRender();
+      });
+
+      container.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest('[data-del]');
+        if(!btn) return;
+        const idx = +btn.dataset.del;
+        removeRow(idx);
+      });
+    }
+
+    // ======= PRICING ENGINE =======
+    function compute(){
+      if (!PRESETS.length) { return { paper: findPaper(State.paperId), rows: [], unitItems: [], totalSqm:0, totalUnits:0, regularSubtotal:0, projectSubtotal:0, tierPct:0, appliedMode:'regular', productsSubtotal:0, grandTotal:0, groupMinMessages:[] }; }
+      const paper = findPaper(State.paperId);
+
+      const rows = State.rows.map((r, idx)=>{
+        const preset = PRESET_MAP[r.sizeKey] || PRESETS[0];
+        const {w,h,f,minQty} = preset;
+        const qty = Math.max(1, Math.round(+r.qty||1));
+        const sqm = Math.max(0, sqmOf(w,h));
+        return { idx, sizeKey: r.sizeKey, w, h, f, minQty, qty, appliedQty: qty, sqm };
+      });
+
+      const groupMinMessages = [];
+      if(!State.projectMode){
+        const groups = new Map();
+        rows.forEach((r,i)=>{
+          if(r.minQty>0){
+            const key = `${r.w}x${r.h}`;
+            if(!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(i);
+          }
+        });
+        for(const [key, idxs] of groups.entries()){
+          const mqty = rows[idxs[0]].minQty;
+          const sumQty = idxs.reduce((s,i)=> s + rows[i].qty, 0);
+          if(sumQty < mqty){
+            const uplift = mqty - sumQty;
+            rows[idxs[0]].appliedQty += uplift;
+            const label = `${rows[idxs[0]].w}×${rows[idxs[0]].h} ס״מ`;
+            groupMinMessages.push(`בגודל ${label}: מינימום הזמנה ${mqty} יח׳. המחיר חושב לפי ${mqty}.`);
+          }
+        }
+      }
+
+      const totalSqm = rows.reduce((s,r)=> s + r.sqm*r.appliedQty, 0);
+      const totalUnits = rows.reduce((s,r)=> s + r.appliedQty, 0);
+
+      const unitItems = rows.map(r=>{
+        const unitPrice = Math.round(paper.pricePerSqm * r.sqm * r.f);
+        return { ...r, unitPrice, line: unitPrice * r.appliedQty };
+      });
+      const regularSubtotal = unitItems.reduce((s,r)=> s + r.line, 0);
+
+      const tierPct = getTierDiscountPct(paper,totalSqm);
+      const baseProject = paper.pricePerSqm * totalSqm;
+      const projectSubtotal = Math.round(baseProject * (1 - tierPct/100));
+
+      const appliedMode = (State.projectMode || totalSqm >= CONFIG.sqmDealThreshold) ? 'project' : 'regular';
+      const productsSubtotal = (appliedMode==='project') ? projectSubtotal : regularSubtotal;
+      const grandTotal = productsSubtotal;
+
+      return { paper, rows, unitItems, totalSqm, totalUnits, regularSubtotal, projectSubtotal, tierPct, appliedMode, productsSubtotal, grandTotal, groupMinMessages };
+    }
+
+    function render(){
+      const R = compute();
+
+      const rowsEl = el('#rows');
+      rowsEl.innerHTML = State.rows.map((row,idx)=> rowTemplate(row, idx, R.paper)).join('');
+      bindRowEvents();
+
+      setText('#kpiSqm', `${R.totalSqm.toFixed(2)} מ"ר`);
+      setText('#kpiUnits', `${R.totalUnits}`);
+      setText('#kpiSqmPrice', money(R.paper.pricePerSqm));
+      const paperNameEl = el('#kpiPaperName');
+      if (paperNameEl) paperNameEl.textContent = R.paper.name;
+
+      const threshold = CONFIG.sqmDealThreshold;
+      const pct = Math.max(0, Math.min(1, R.totalSqm / threshold));
+      el('#progressBar').style.width = `${pct*100}%`;
+      el('#progressHint').innerHTML = R.appliedMode==='project'
+        ? `מצב פרויקט/סף מ"ר: החישוב לפי סה"כ מ״ר (מדרגה ${R.tierPct||0}%‑ אם רלוונטי).`
+        : `הגעת ל‑<b>${R.totalSqm.toFixed(2)} מ״ר</b> • חסרים עוד <b>${(threshold - R.totalSqm).toFixed(2)} מ״ר</b> לדיל למ״ר.`;
+
+      const totalHtml = `<div class="total"><span>סה"כ לתשלום</span><span class="mono">${fmtCurrency(R.grandTotal)} ${CONFIG.currency}</span></div>`;
+      let why = '';
+      if(R.appliedMode==='project'){
+        const reason = State.projectMode ? 'במצב פרויקט' : `כי עברתם ${CONFIG.sqmDealThreshold} מ״ר`;
+        const tier = R.tierPct ? ` (כולל מדרגה ${R.tierPct}%‎)` : '';
+        why = `חושב לפי <b>מ״ר</b> ${reason}${tier}.`;
+      } else {
+        why = `חושב <b>לפי יחידות</b> כי מתחת לסף ה־${CONFIG.sqmDealThreshold} מ״ר.`;
+      }
+      const otherSubtotal = (R.appliedMode==='regular') ? R.projectSubtotal : R.regularSubtotal;
+      const diffNow = Math.max(0, otherSubtotal - R.grandTotal);
+      const breakdownHtml = `
+        <div id="breakdown" style="display:none;margin-top:6px">
+          ${lineHTML('תמחור לפי יחידות', R.regularSubtotal)}
+          ${lineHTML(`תמחור לפי מ״ר${R.tierPct?` (כולל ${R.tierPct}%‎)`:''}`, R.projectSubtotal)}
+          ${diffNow>0 ? `<div class="note ok">החיסכון כעת: ${fmtCurrency(diffNow)} ${CONFIG.currency}</div>` : ''}
+        </div>`;
+      const toggleBtn = `<button class="btn inline" id="toggleBreakdown">הראה פירוט</button>`;
+      el('#pricesArea').innerHTML = totalHtml + `<div class="note note-lg">${why}</div>` + toggleBtn + breakdownHtml;
+
+      const tbtn = el('#toggleBreakdown');
+      if(tbtn){
+        tbtn.addEventListener('click', ()=>{
+          const box = el('#breakdown'); if(!box) return;
+          const open = box.style.display!=='none';
+          box.style.display = open ? 'none' : 'block';
+          tbtn.textContent = open ? 'הראה פירוט' : 'הסתר פירוט';
+        });
+      }
+
+      const minMsgs = (R.appliedMode!=='project') ? R.groupMinMessages : [];
+      el('#minNotice').innerHTML = (minMsgs && minMsgs.length)
+        ? `<div class="alert" role="alert" aria-live="polite"><span class="ico" aria-hidden="true">💡</span><div class="text">${minMsgs.join('<br/>')}</div></div>`
+        : '';
+
+      const tierEl = el('#tierLine');
+      const tiers = (R.paper.tiers||[]).slice().sort((a,b)=>a.min-b.min);
+      if (tiers.length) {
+        const [first, ...rest] = tiers;
+        let text = `בהזמנה של ${first.min} מ"ר תינתן הנחה של ${first.pct}%`;
+        if (rest.length) text += ' · ' + rest.map(t=>`${t.min} מ"ר – ${t.pct}%`).join(' · ');
+        tierEl.textContent = text;
+      } else tierEl.textContent = '';
+    }
+
+    function lineHTML(label,amount){
+      return `<div class="price-line"><span class="flex">${label}</span><span class="mono">${fmtCurrency(amount)} ${CONFIG.currency}</span></div>`;
+    }
+
+    function saveAndRender(){ try{ localStorage.setItem('printCalcV2_4', JSON.stringify(State)); }catch(e){} render(); }
+    function resetAll(){ try{ localStorage.removeItem('printCalcV2_4'); }catch(e){} State.paperId='epson-luster'; State.projectMode=false; State.rows=[]; addRow(); saveAndRender(); }
+
+    function shareWhatsApp(){
+      const R = compute();
+      const lines = [];
+      lines.push('הצעת מחיר להדפסה מסטודיו ארטסקאן');
+      lines.push(`נייר: ${R.paper.name} (בסיס ${R.paper.pricePerSqm} ${CONFIG.currency}/מ"ר)`);
+      R.rows.forEach((r,i)=>{
+        const key = `${r.w}x${r.h}`; const preset = PRESET_MAP[key]; const star = (preset && preset.minQty>0) ? ' *' : '';
+        lines.push(`שורה ${i+1}: ${r.w}×${r.h} ס"מ${star} × ${r.appliedQty} יח׳ (${(r.sqm*r.appliedQty).toFixed(2)} מ"ר)`);
+      });
+      lines.push(`סיכום: ${R.totalUnits} יח׳ • ${R.totalSqm.toFixed(2)} מ"ר`);
+      lines.push(`תמחור: ${R.appliedMode==='project'?'לפי מ"ר':'יחידתי'}`);
+      if(R.appliedMode==='project'){
+        if(R.tierPct) lines.push(`מדרגה: ${R.tierPct}%‑`);
+        const effSqm = R.totalSqm>0 ? Math.round(R.projectSubtotal / R.totalSqm) : 0;
+        lines.push(`מחיר אפקטיבי למ"ר: ${fmtCurrency(effSqm)} ${CONFIG.currency}`);
+      }
+      const avgUnit = R.totalUnits>0 ? Math.round(R.grandTotal / R.totalUnits) : 0;
+      lines.push(`מחיר ממוצע ליח׳: ${fmtCurrency(avgUnit)} ${CONFIG.currency}`);
+      lines.push(`סה"כ לתשלום: ${fmtCurrency(R.grandTotal)} ${CONFIG.currency}`);
+      lines.push('—');
+      lines.push('*גדלים עם כוכבית בעלי מינימום הזמנה 4 יח׳ (במצב פרויקט אין מינימום).');
+      const text = encodeURIComponent(lines.join('\n'));
+      const url = `https://wa.me/?text=${text}`;
+      const w = window.open(url,'_blank','noopener'); if (w) w.opener = null;
+    }
+
+    function renderOnce(){
+      const saved = localStorage.getItem('printCalcV2_4');
+      if(saved){ try{ Object.assign(State, JSON.parse(saved)||{}); }catch(e){} }
+      if(!State.rows.length) addRow();
+      render();
+    }
+
+    // ======= BOOT =======
+    renderOnce();
+    initUI();
+  })();
+  </script>
+</body>
+</html>
