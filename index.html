@@ -3,18 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>מחשבון הדפסה</title>
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <style>
+  <title>מחשבון הדפסה</title><style>
     :root{
       --bg:#f6f7fb; --card:#ffffff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
       --brand:#2563eb; --brand-ink:#fff; --ok:#16a34a; --warn:#c2410c;
+      --info-bg:#eff6ff; --info-bd:#bfdbfe; --info-ink:#1e40af;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Assistant',system-ui,Arial,sans-serif}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,'Segoe UI',Arial,Helvetica,sans-serif}
     h1,h2,h3{margin:0 0 8px}
-    /* רוחב מוקטן ~30% */
-    .wrap{max-width:700px;margin:24px auto;padding:16px}
+    .wrap{max-width:640px;margin:24px auto;padding:16px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px #00000010;padding:16px}
     label{display:block;font-weight:600;margin-top:10px}
     select,input[type="number"],button{font-family:inherit;font-size:16px}
@@ -24,32 +22,57 @@
     .btn.brand{background:var(--brand);color:var(--brand-ink);font-weight:700}
     .btn.ghost{background:#fff;border:1px solid var(--line)}
     .btn.icon{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:#fff}
-    .btn.inline{padding:8px 10px;border-radius:8px}
     .sub{color:var(--muted);font-size:14px}
     .sub-lg{font-size:16px;font-weight:600}
     .rows{display:flex;flex-direction:column;gap:12px;margin-top:8px}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .divider{height:1px;background:var(--line);margin:12px 0}
     .summary h3{margin-top:4px}
-    .kpi{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:12px 0}
+    .kpi{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:12px 0}
     .pill{border:1px solid var(--line);padding:10px;border-radius:12px;background:#fff}
     .ok{color:var(--ok)}
     .muted{color:var(--muted)}
-    /* פס התקדמות – כהה משמאל, בהיר מימין */
     .progress{height:16px;background:#e8f5e9;border-radius:999px;position:relative;overflow:hidden}
     .progress>i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#16a34a,#bbf7d0);}    
     .price-line{display:flex;justify-content:space-between;gap:8px;margin:6px 0}
     .total{display:flex;justify-content:space-between;align-items:baseline;margin:8px 0 10px;font-weight:700}
-    .total .mono{font-size:20px}
+    .total .mono{font-size:22px}
     .note{font-size:13px;color:var(--muted)}
     .note-lg{font-size:16px}
-    /* Alert (red) for minimum notice */
     .alert{display:flex;gap:8px;align-items:flex-start;color:#dc2626;font-size:16px;font-weight:600}
     .alert .ico{font-size:18px;line-height:1;margin-top:2px}
     .alert .text{font-weight:600}
     .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .right{margin-inline-start:auto}
     .mono{font-variant-numeric:tabular-nums}
+
+    .tabs{display:flex;gap:8px;margin-bottom:8px}
+    .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;cursor:pointer}
+    .tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+    .callout{background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-ink);padding:12px 14px;border-radius:12px;display:flex;gap:8px;align-items:flex-start}
+    .callout .ico{font-size:18px;line-height:1;margin-top:2px}
+
+    /* === Mobile tweaks === */
+    @media (max-width: 640px){
+      .wrap{max-width:560px; padding:12px}
+      .tabs{flex-wrap:wrap}
+      .tab{flex:1; text-align:center; padding:10px 12px}
+      .row{grid-template-columns: 1fr 1fr; align-items:end}
+      .row .btn.icon{grid-column: 2; justify-self:end; margin-top:4px}
+      label{margin-top:8px}
+      select,input[type="number"]{font-size:15px; padding:10px}
+      .kpi{grid-template-columns:1fr}
+      .pill{padding:8px}
+      .progress{height:12px}
+      .total .mono{font-size:20px}
+    }
+    @media (max-width: 380px){
+      .wrap{padding:10px}
+      .tab{padding:8px 10px}
+      .total .mono{font-size:18px}
+    }
+
+    @media print{ .toolbar button, #shareWA, #copyQuote{ display:none !important; } body{ background:#fff; } .card{ box-shadow:none; border:none; } }
   </style>
 </head>
 <body>
@@ -57,36 +80,81 @@
     <h1>מחשבון מחיר הדפסה</h1>
 
     <section class="card">
-      <div class="toolbar">
-        <h2 style="margin-inline-end:auto">הגדרות והזמנה</h2>
-        <button id="resetAll" class="btn ghost">איפוס</button>
+      <div class="tabs" role="tablist" aria-label="מצבי חישוב">
+        <button id="tabQuick" class="tab active" role="tab" aria-selected="true" aria-controls="panelQuick">מצב מהיר</button>
+        <button id="tabSeries" class="tab" role="tab" aria-selected="false" aria-controls="panelSeries">מצב סדרות</button>
       </div>
 
-      <label>סוג נייר</label>
-      <select id="paper"></select>
-      <div class="sub" id="paperInfo" style="display:none"></div>
+      <!-- QUICK MODE -->
+      <div id="panelQuick" role="tabpanel" aria-labelledby="tabQuick">
+        <div class="toolbar">
+          <h2 style="margin-inline-end:auto">הדפסה בודדת/קטנה</h2>
+          <button id="resetQuick" class="btn ghost">איפוס מהיר</button>
+        </div>
 
-      <label style="margin-top:14px;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="projectMode" />
-        מחשב כהזמנת פרויקט אחת (תמחור לפי מ״ר לסך הכל; אין מינימום יח׳)
-      </label>
+        <label>בחרו סוג נייר</label>
+        <select id="paperQuick"></select>
+
+        <label>בחרו גודל</label>
+        <select id="sizeQuick"></select>
+
+        <label>כמות</label>
+        <input id="qtyQuick" type="number" min="1" step="1" value="1" />
+
+        <div class="sub">המחירים כוללים מע"מ.</div>
+
+        <div id="minNoticeQuick" style="margin:10px 0"></div>
+
+        <div id="nearMeter" class="suggest" aria-live="polite" style="display:none;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:10px 12px;margin:10px 0">
+          <span class="ico">⚠️</span>
+          <div id="nearText"></div>
+          <button id="goSeries" class="btn ghost right">עבור למצב סדרות</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="callout" id="whyMeterQuick"><span class="ico">ℹ️</span>
+          <div>
+            <b>למה משתלם להזמין לפחות 1 מ"ר?</b><br/>
+            תמחור פשוט לפי שטח מצטבר; לרוב <b>מחיר ממוצע ליחידה נמוך יותר</b> בהזמנה מרוכזת; עבודה רציפה ואחידה להדפסות.
+            <div id="reachHintQuick" class="note" style="margin-top:6px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERIES MODE -->
+      <div id="panelSeries" role="tabpanel" aria-labelledby="tabSeries" hidden>
+        <div class="toolbar">
+          <h2 style="margin-inline-end:auto">הזמנה מרובת הדפסות</h2>
+          <button id="resetSeries" class="btn ghost">איפוס סדרות</button>
+        </div>
+
+        <label>בחרו סוג נייר</label>
+        <select id="paperSeries"></select>
+
+        <div class="toolbar" style="margin-top:8px">
+          <h3 style="margin-inline-end:auto">שורות ההדפסה</h3>
+          <button id="addRow" class="btn ghost">+ הוסף שורה</button>
+        </div>
+        <div class="sub">כל שורה היא בחירה מרשימת הגדלים. גדלים המסומנים ב‑<b>*</b> – מינימום הזמנה 4 יח׳. (המחירים כוללים מע"מ)</div>
+        <div id="rows" class="rows"></div>
+
+        <div id="minNotice" class="note" style="margin:10px 0"></div>
+
+        <div class="callout"><span class="ico">💡</span>
+          <div>
+            <b>טיפ:</b> איחוד ההדפסות בהזמנה אחת מקרב אתכם ל‑1 מ"ר כך שהחישוב יעבור לתמחור לפי שטח.
+          </div>
+        </div>
+      </div>
 
       <div class="divider"></div>
 
-      <div class="toolbar">
-        <h3 style="margin-inline-end:auto">שורות ההדפסה</h3>
-        <button id="addRow" class="btn ghost">+ הוסף שורה</button>
-      </div>
-      <div class="sub">כל שורה היא בחירה מרשימת הגדלים. גדלים המסומנים ב‑<b>*</b> – מינימום הזמנה 4 יח׳.</div>
-      <div id="rows" class="rows"></div>
-
-      <div class="divider"></div>
-
+      <!-- SUMMARY (shared) -->
       <div class="summary">
-        <h3>סיכום</h3>
+        <h3 id="summaryTitle">סיכום</h3>
         <div class="kpi">
           <div class="pill">
-            <div class="sub">מחיר בסיס למ"ר</div>
+            <div class="sub">מחיר בסיס למ"ר (כולל מע"מ)</div>
             <div class="mono" id="kpiSqmPrice">—</div>
             <div class="sub" id="kpiPaperName"></div>
           </div>
@@ -99,55 +167,46 @@
             <div class="mono" id="kpiUnits">0</div>
           </div>
         </div>
-
-        <div id="minNotice" class="note" style="margin:6px 0"></div>
-
-        <div class="sub sub-lg" style="margin:8px 0 4px">התקדמות לדיל של 1 מ"ר</div>
-        <div class="progress" aria-label='התקדמות ל-1 מ"ר'><i id="progressBar"></i></div>
-        <div id="progressHint" class="note note-lg" style="margin-top:6px"></div>
+        <div id="progressWrap">
+          <div id="progressLabel" class="sub sub-lg" style="margin:8px 0 4px">התקדמות ל‑1 מ"ר</div>
+          <div class="progress" aria-label='סך שטח מצטבר'><i id="progressBar"></i></div>
+          <div id="progressHint" class="note note-lg" style="margin-top:6px"></div>
+        </div>
 
         <div class="divider"></div>
         <div id="pricesArea"></div>
-        <div id="tierLine" class="note note-lg" style="margin-top:6px"></div>
 
         <div class="divider"></div>
-
-        <div class="flex" style="justify-content:center">
-          <button class="btn brand" id="shareWA">שלח הצעה לוואטסאפ</button>
-        </div>
-        <div class="note" style="text-align:center;margin-top:6px">הנתונים נשמרים מקומית במכשיר שלך.</div>
       </div>
     </section>
   </div>
 
   <script>
   (function(){
-    if (window.__PRINT_CALC_SINGLETON__ && window.__PRINT_CALC_SINGLETON__.initialized) return;
-    window.__PRINT_CALC_SINGLETON__ = { initialized: true, version: 'prod-1.0' };
+    // אין נעילת singleton כדי להבטיח שהסקריפט תמיד ירוץ
 
     // ======= CONFIG =======
     const CONFIG = {
       currency: '₪',
       sqmDealThreshold: 1, // מ"ר
+      nearPct: 0.90, // קרוב לסף 1 מ"ר במצב מהיר
       papers: [
-        { id:'enhance-matt', name:'Enhance Matt Paper', pricePerSqm:314, tiers:[ {min:2, pct:5},{min:5, pct:10},{min:10, pct:15} ] },
-        { id:'epson-luster', name:'Epson Premium Luster', pricePerSqm:354, tiers:[ {min:2, pct:5},{min:5, pct:10},{min:10, pct:15} ] },
-        { id:'canson-etching-rag', name:'Canson Etching Rag', pricePerSqm:648, tiers:[ {min:3, pct:5},{min:7, pct:10} ] },
-        { id:'canson-rag-baryta', name:'Canson Rag Baryta', pricePerSqm:608, tiers:[ {min:3, pct:5},{min:7, pct:10} ] },
-        { id:'shil-metallic-pearl', name:'Shil Metallic Pearl', pricePerSqm:474, tiers:[ {min:2, pct:5},{min:5, pct:10} ] },
+        { id:'enhance-matt', name:'Enhance Matt Paper', pricePerSqm:314 },
+        { id:'epson-luster', name:'Epson Premium Luster', pricePerSqm:354 },
+        { id:'canson-etching-rag', name:'Canson Etching Rag', pricePerSqm:648 },
+        { id:'canson-rag-baryta', name:'Canson Rag Baryta', pricePerSqm:608 },
+        { id:'shil-metallic-pearl', name:'Shil Metallic Pearl', pricePerSqm:474 },
       ],
       sizes: [
-        // ללא "מותאם אישית" – רק פריסטים
-        ['20×30 ס"מ',20,30,1.8,4], ['25×35 ס"מ',25,35,1.9,4], ['30×40 ס"מ',30,40,1.7,4], ['30×30 ס"מ',30,30,1.7,4], ['30×45 ס"מ',30,45,1.7,4],
-        ['35×45 ס"מ',35,45,1.6,4], ['35×50 ס"מ',35,50,1.6,4], ['40×40 ס"מ',40,40,1.6,4], ['40×50 ס"מ',40,50,1.5,4],
-        // 40×55 ומעלה ללא מינימום 4
-        ['40×55 ס"מ',40,55,1.5], ['40×60 ס"מ',40,60,1.5], ['40×65 ס"מ',40,65,1.4], ['50×50 ס"מ',50,50,1.4], ['50×60 ס"מ',50,60,1.4], ['50×70 ס"מ',50,70,1.3],
-        ['50×80 ס"מ',50,80,1.3], ['50×90 ס"מ',50,90,1.2], ['50×100 ס"מ',50,100,1.2], ['50×120 ס"מ',50,120,1.2], ['60×60 ס"מ',60,60,1.3],
-        ['60×70 ס"מ',60,70,1.2], ['60×80 ס"מ',60,80,1.2], ['60×90 ס"מ',60,90,1.2], ['60×100 ס"מ',60,100,1.1], ['60×120 ס"מ',60,120,1.1],
-        ['70×70 ס"מ',70,70,1.2], ['70×80 ס"מ',70,80,1.2], ['70×90 ס"מ',70,90,1.1], ['70×100 ס"מ',70,100,1.1], ['70×120 ס"מ',70,120,1.2],
-        ['80×80 ס"מ',80,80,1.1], ['80×100 ס"מ',80,100,1.0], ['80×120 ס"מ',80,120,1.1], ['90×90 ס"מ',90,90,1.2], ['90×100 ס"מ',90,100,1.1],
-        ['90×120 ס"מ',90,120,1.1], ['90×140 ס"מ',90,140,1.0], ['100×100 ס"מ',100,100,1.0], ['100×120 ס"מ',100,120,1.0], ['100×130 ס"מ',100,130,1.0],
-        ['100×140 ס"מ',100,140,1.0], ['100×150 ס"מ',100,150,1.0], ['100×170 ס"מ',100,170,1.0], ['100×200 ס"מ',100,200,1.0],
+        ['20×30',20,30,1.8,4], ['25×35',25,35,1.9,4], ['30×40',30,40,1.7,4], ['30×30',30,30,1.7,4], ['30×45',30,45,1.7,4],
+        ['35×45',35,45,1.6,4], ['35×50',35,50,1.6,4], ['40×40',40,40,1.6,4], ['40×50',40,50,1.5,4],
+        ['40×55',40,55,1.5], ['40×60',40,60,1.5], ['40×65',40,65,1.4], ['50×50',50,50,1.4], ['50×60',50,60,1.4], ['50×70',50,70,1.3],
+        ['50×80',50,80,1.3], ['50×90',50,90,1.2], ['50×100',50,100,1.2], ['50×120',50,120,1.2], ['60×60',60,60,1.3],
+        ['60×70',60,70,1.2], ['60×80',60,80,1.2], ['60×90',60,90,1.2], ['60×100',60,100,1.1], ['60×120',60,120,1.1],
+        ['70×70',70,70,1.2], ['70×80',70,80,1.2], ['70×90',70,90,1.1], ['70×100',70,100,1.1], ['70×120',70,120,1.2],
+        ['80×80',80,80,1.1], ['80×100',80,100,1.0], ['80×120',80,120,1.1], ['90×90',90,90,1.2], ['90×100',90,100,1.1],
+        ['90×120',90,120,1.1], ['90×140',90,140,1.0], ['100×100',100,100,1.0], ['100×120',100,120,1.0], ['100×130',100,130,1.0],
+        ['100×140',100,140,1.0], ['100×150',100,150,1.0], ['100×170',100,170,1.0], ['100×200',100,200,1.0],
       ],
       addons: [],
       bleedCm: 0,
@@ -155,67 +214,130 @@
 
     // ======= STATE =======
     const DEFAULT_STATE = () => ({
-      paperId: 'epson-luster',
-      projectMode: false,
-      rows: [], // { sizeKey, qty }
+      activeTab: 'quick',
+      paperIdQuick: 'epson-luster',
+      paperIdSeries: 'epson-luster',
+      quick: { sizeKey: null, qty: 1 },
+      rows: []
     });
     const State = DEFAULT_STATE();
 
     // ======= UTILS =======
     const el = sel => document.querySelector(sel);
     const fmtCurrency = n => new Intl.NumberFormat('he-IL').format(n);
-    const sqmOf = (wCm,hCm) => ((wCm + CONFIG.bleedCm) * (hCm + CONFIG.bleedCm)) / 10000;
-    const findPaper = id => CONFIG.papers.find(p=>p.id===id);
-    const getTierDiscountPct = (paper,totalSqm)=>{ let pct=0; (paper.tiers||[]).forEach(t=>{ if(totalSqm>=t.min) pct=Math.max(pct,t.pct)}); return pct; };
-
     const money = n => `${fmtCurrency(n)} ${CONFIG.currency}`;
     const setText = (sel, txt) => { const e = el(sel); if(e) e.textContent = txt; };
-    let __rowsDelegationBound = false;
+    const sqmOf = (w,h) => ((w + CONFIG.bleedCm) * (h + CONFIG.bleedCm)) / 10000;
 
-    // --- per‑unit price helpers for option labels ---
-    function unitPriceForPreset(s, paper){ return Math.round(paper.pricePerSqm * sqmOf(s.w, s.h) * s.f); }
-    function optionLabelWithPrice(s, paper){ const up = unitPriceForPreset(s, paper); return `${s.label} — ${fmtCurrency(up)} ${CONFIG.currency} ליח׳`; }
-
-    // פריסטים + כוכבית לגדלים עם מינימום
-    const PRESETS = CONFIG.sizes.map(([label,w,h,f,minQty])=>{
+    const PRESETS = CONFIG.sizes.map(([_,w,h,f,minQty])=>{
+      const big = Math.max(w,h), small = Math.min(w,h);
       const key = `${w}x${h}`;
-      const showStar = (minQty && minQty>0);
-      const displayLabel = `${label}${showStar?' *':''}`;
-      return {key,label:displayLabel,w,h,f,minQty:minQty||0};
+      const star = (minQty && minQty>0) ? ' *' : '';
+      return { key, w, h, f, minQty:minQty||0, label:`${big}×${small} ס״מ${star}` };
     });
     const PRESET_MAP = Object.fromEntries(PRESETS.map(s=>[s.key,s]));
 
+    const findPaper = (id) => CONFIG.papers.find(p=>p.id===id) || CONFIG.papers[0];
+
+    // === labels with per-unit price ===
+    function optionLabel(s, paper){
+      const sqm = sqmOf(s.w, s.h);
+      const up = Math.round(paper.pricePerSqm * sqm * s.f);
+      const big = Math.max(s.w, s.h), small = Math.min(s.w, s.h);
+      const star = s.minQty>0 ? ' *' : '';
+      return `${big}×${small} ס״מ${star} — ${fmtCurrency(up)} ${CONFIG.currency} ליח׳`;
+    }
+    function buildQuickSizeOptions(){
+      const paper = findPaper(State.paperIdQuick);
+      const sel = el('#sizeQuick'); if(!sel) return;
+      const opts = PRESETS.map(s=>`<option value="${s.key}">${optionLabel(s,paper)}</option>`).join('');
+      sel.innerHTML = opts; sel.value = State.quick.sizeKey;
+    }
+    function buildSeriesRowOptions(paper){
+      return PRESETS.map(s=>`<option value="${s.key}">${optionLabel(s,paper)}</option>`).join('');
+    }
+
     // ======= INIT UI =======
+    let __seriesBound = false;
     function initUI(){
-      const paperSel = el('#paper');
-      paperSel.innerHTML = CONFIG.papers.map(p=>`<option value="${p.id}">${p.name} (${p.pricePerSqm} ${CONFIG.currency} למ״ר)</option>`).join('');
-      paperSel.value = State.paperId;
-      paperSel.addEventListener('change',()=>{ State.paperId = paperSel.value; saveAndRender(); });
+      // tabs
+      el('#tabQuick').addEventListener('click', ()=> switchTab('quick'));
+      el('#tabSeries').addEventListener('click', ()=> switchTab('series'));
 
-      el('#addRow').addEventListener('click',()=>{ addRow(); saveAndRender(); });
-      el('#projectMode').checked = State.projectMode;
-      el('#projectMode').addEventListener('change', (e)=>{ State.projectMode = e.target.checked; saveAndRender(); });
+      // paper selects
+      const paperOpts = CONFIG.papers.map(p=>`<option value="${p.id}">${p.name} (${p.pricePerSqm} ${CONFIG.currency}/מ"ר)</option>`).join('');
+      el('#paperQuick').innerHTML = paperOpts;
+      el('#paperSeries').innerHTML = paperOpts;
+      el('#paperQuick').value = State.paperIdQuick;
+      el('#paperSeries').value = State.paperIdSeries;
+      el('#paperQuick').addEventListener('change', e=>{ State.paperIdQuick = e.target.value; saveAndRender(); });
+      el('#paperSeries').addEventListener('change', e=>{ State.paperIdSeries = e.target.value; saveAndRender(); });
 
-      el('#resetAll').addEventListener('click', resetAll);
-      el('#shareWA').addEventListener('click', shareWhatsApp);
+      // quick controls
+      if(!State.quick.sizeKey) State.quick.sizeKey = PRESETS[0].key;
+      buildQuickSizeOptions();
+      el('#sizeQuick').addEventListener('change', e=>{ State.quick.sizeKey = e.target.value; saveAndRender(); });
+      el('#qtyQuick').value = State.quick.qty;
+      el('#qtyQuick').addEventListener('input', e=>{ State.quick.qty = Math.max(1, Math.round(+e.target.value||1)); e.target.value = State.quick.qty; saveAndRender(); });
+      el('#resetQuick').addEventListener('click', ()=>{ State.quick = { sizeKey: PRESETS[0].key, qty: 1 }; State.paperIdQuick='epson-luster'; saveAndRender(); });
+
+      // series controls
+      el('#addRow').addEventListener('click', ()=>{ addRow(); saveAndRender(); });
+      el('#resetSeries').addEventListener('click', ()=>{ State.rows = []; State.paperIdSeries='epson-luster'; addRow(); saveAndRender(); });
+
+      // bind series events ONCE (האזנה בהאצלה)
+      const container = el('#rows');
+      if(container && !__seriesBound){
+        __seriesBound = true;
+        container.addEventListener('change', ev=>{
+          const ctrl = ev.target.closest('[data-field]'); if(!ctrl) return;
+          const rowEl = ev.target.closest('.row'); if(!rowEl) return;
+          const idx = +rowEl.dataset.idx; const field = ctrl.dataset.field;
+          if(field==='sizeKey'){ State.rows[idx].sizeKey = ctrl.value; }
+          if(field==='qty'){ State.rows[idx].qty = Math.max(1, Math.round(+ctrl.value||1)); ctrl.value = State.rows[idx].qty; }
+          saveAndRender();
+        });
+        // תגובה מיידית לשינויי כמות (חיצים/הקלדה)
+        container.addEventListener('input', ev=>{
+          const ctrl = ev.target.closest('[data-field]'); if(!ctrl || ctrl.dataset.field!=='qty') return;
+          const rowEl = ev.target.closest('.row'); if(!rowEl) return;
+          const idx = +rowEl.dataset.idx;
+          State.rows[idx].qty = Math.max(1, Math.round(+ctrl.value||1));
+          saveAndRender();
+        });
+        container.addEventListener('click', ev=>{
+          const btn = ev.target.closest('[data-del]'); if(!btn) return;
+          const idx = +btn.dataset.del; removeRow(idx); saveAndRender();
+        });
+      }
+
+      // CTAs
+      const goBtn = el('#goSeries'); if(goBtn){ goBtn.addEventListener('click', ()=>{ moveQuickToSeries(); }); }
 
       if(!State.rows.length){ addRow(); }
       render();
     }
 
-    function addRow(){
-      const first = PRESETS[0]; // 20×30
-      State.rows.push({ sizeKey:first.key, qty:1 });
+    function switchTab(tab){
+      State.activeTab = tab;
+      const isQuick = tab==='quick';
+      el('#tabQuick').classList.toggle('active', isQuick);
+      el('#tabSeries').classList.toggle('active', !isQuick);
+      el('#panelQuick').hidden = !isQuick;
+      el('#panelSeries').hidden = isQuick;
+      saveAndRender();
     }
-    function removeRow(idx){ State.rows.splice(idx,1); saveAndRender(); }
 
-    function rowTemplate(row,idx,paper){
-      const presetOptions = PRESETS.map(s=>`<option value="${s.key}" ${row.sizeKey===s.key?'selected':''}>${optionLabelWithPrice(s, paper)}</option>`).join('');
+    function addRow(){ State.rows.push({ sizeKey: PRESETS[0].key, qty: 1 }); }
+    function removeRow(idx){ State.rows.splice(idx,1); }
+
+    function rowTemplate(row, idx, paper){
+      const sizeOptions = PRESETS.map(s=>`<option value="${s.key}" ${row.sizeKey===s.key?'selected':''}>${optionLabel(s,paper)}</option>`).join('');
       return `
         <div class="row" data-idx="${idx}">
           <div>
             <label>בחרו גודל</label>
-            <select data-field="sizeKey">${presetOptions}</select>
+            <select data-field="sizeKey">${sizeOptions}</select>
           </div>
           <div>
             <label>כמות</label>
@@ -224,70 +346,40 @@
           <div>
             <button class="btn icon" title="מחק" data-del="${idx}">✕</button>
           </div>
-        </div>
-      `;
-    }
-
-    function bindRowEvents(){
-      const container = el('#rows');
-      if(!container || __rowsDelegationBound) return; // bind once
-      __rowsDelegationBound = true;
-
-      container.addEventListener('change', (ev)=>{
-        const ctrl = ev.target.closest('[data-field]');
-        if(!ctrl) return;
-        const rowEl = ev.target.closest('.row');
-        if(!rowEl) return;
-        const idx = +rowEl.dataset.idx;
-        const field = ctrl.dataset.field;
-        if(field==='sizeKey'){
-          State.rows[idx].sizeKey = ctrl.value;
-        } else if(field==='qty'){
-          State.rows[idx].qty = Math.max(1, Math.round(+ctrl.value||1));
-          ctrl.value = State.rows[idx].qty;
-        }
-        saveAndRender();
-      });
-
-      container.addEventListener('click', (ev)=>{
-        const btn = ev.target.closest('[data-del]');
-        if(!btn) return;
-        const idx = +btn.dataset.del;
-        removeRow(idx);
-      });
+        </div>`;
     }
 
     // ======= PRICING ENGINE =======
     function compute(){
-      if (!PRESETS.length) { return { paper: findPaper(State.paperId), rows: [], unitItems: [], totalSqm:0, totalUnits:0, regularSubtotal:0, projectSubtotal:0, tierPct:0, appliedMode:'regular', productsSubtotal:0, grandTotal:0, groupMinMessages:[] }; }
-      const paper = findPaper(State.paperId);
+      const isQuick = State.activeTab==='quick';
+      const paperId = isQuick ? State.paperIdQuick : State.paperIdSeries;
+      const paper = findPaper(paperId);
 
-      const rows = State.rows.map((r, idx)=>{
-        const preset = PRESET_MAP[r.sizeKey] || PRESETS[0];
-        const {w,h,f,minQty} = preset;
-        const qty = Math.max(1, Math.round(+r.qty||1));
-        const sqm = Math.max(0, sqmOf(w,h));
-        return { idx, sizeKey: r.sizeKey, w, h, f, minQty, qty, appliedQty: qty, sqm };
-      });
+      let rowsRaw = [];
+      if(isQuick){
+        const s = PRESET_MAP[State.quick.sizeKey] || PRESETS[0];
+        const qty = Math.max(1, Math.round(+State.quick.qty||1));
+        rowsRaw = [{ key:s.key, w:s.w, h:s.h, f:s.f, minQty:s.minQty, qty }];
+      } else {
+        rowsRaw = State.rows.map(r=>{ const s=PRESET_MAP[r.sizeKey]||PRESETS[0]; const qty=Math.max(1,Math.round(+r.qty||1)); return { key:s.key,w:s.w,h:s.h,f:s.f,minQty:s.minQty,qty }; });
+      }
+
+      const rows = rowsRaw.map(r=>({ ...r, sqm: sqmOf(r.w,r.h), appliedQty:r.qty }));
+      // Pre-minimum total sqm BEFORE enforcing starred minimums
+      const preMinTotalSqm = rows.reduce((s,r)=> s + r.sqm * r.appliedQty, 0);
+      const enforceMinimums = isQuick || preMinTotalSqm < CONFIG.sqmDealThreshold;
 
       const groupMinMessages = [];
-      if(!State.projectMode){
+      if(enforceMinimums){
         const groups = new Map();
-        rows.forEach((r,i)=>{
-          if(r.minQty>0){
-            const key = `${r.w}x${r.h}`;
-            if(!groups.has(key)) groups.set(key, []);
-            groups.get(key).push(i);
-          }
-        });
-        for(const [key, idxs] of groups.entries()){
-          const mqty = rows[idxs[0]].minQty;
-          const sumQty = idxs.reduce((s,i)=> s + rows[i].qty, 0);
-          if(sumQty < mqty){
-            const uplift = mqty - sumQty;
-            rows[idxs[0]].appliedQty += uplift;
-            const label = `${rows[idxs[0]].w}×${rows[idxs[0]].h} ס״מ`;
-            groupMinMessages.push(`בגודל ${label}: מינימום הזמנה ${mqty} יח׳. המחיר חושב לפי ${mqty}.`);
+        rows.forEach((r,i)=>{ if(r.minQty>0){ const k=`${Math.max(r.w,r.h)}x${Math.min(r.w,r.h)}`; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(i); } });
+        for(const [k,idxs] of groups.entries()){
+          const m = rows[idxs[0]].minQty;
+          const sum = idxs.reduce((s,i)=>s+rows[i].qty,0);
+          if(sum < m){
+            const uplift = m - sum; rows[idxs[0]].appliedQty += uplift;
+            const [big,small] = k.split('x');
+            groupMinMessages.push(`בגודל ${big}×${small} ס״מ: מינימום הזמנה ${m} יח׳. המחיר חושב לפי ${m}.`);
           }
         }
       }
@@ -295,132 +387,126 @@
       const totalSqm = rows.reduce((s,r)=> s + r.sqm*r.appliedQty, 0);
       const totalUnits = rows.reduce((s,r)=> s + r.appliedQty, 0);
 
-      const unitItems = rows.map(r=>{
-        const unitPrice = Math.round(paper.pricePerSqm * r.sqm * r.f);
-        return { ...r, unitPrice, line: unitPrice * r.appliedQty };
-      });
-      const regularSubtotal = unitItems.reduce((s,r)=> s + r.line, 0);
+      const unitItems = rows.map(r=>{ const unitPrice=Math.round(paper.pricePerSqm*r.sqm*r.f); return { ...r, unitPrice, line: unitPrice*r.appliedQty }; });
+      const unitSubtotal = unitItems.reduce((s,r)=> s + r.line, 0);
+      const sqmSubtotal = Math.round(paper.pricePerSqm * totalSqm);
 
-      const tierPct = getTierDiscountPct(paper,totalSqm);
-      const baseProject = paper.pricePerSqm * totalSqm;
-      const projectSubtotal = Math.round(baseProject * (1 - tierPct/100));
+      const mode = (totalSqm >= CONFIG.sqmDealThreshold) ? 'sqm' : 'unit';
+      const productsSubtotal = (mode==='sqm') ? sqmSubtotal : unitSubtotal;
+      const grandTotal = isQuick ? unitSubtotal : productsSubtotal;
 
-      const appliedMode = (State.projectMode || totalSqm >= CONFIG.sqmDealThreshold) ? 'project' : 'regular';
-      const productsSubtotal = (appliedMode==='project') ? projectSubtotal : regularSubtotal;
-      const grandTotal = productsSubtotal;
+      let unitsToMeter = null;
+      if(State.activeTab==='quick'){
+        const s = PRESET_MAP[State.quick.sizeKey] || PRESETS[0];
+        const unitSqm = sqmOf(s.w,s.h);
+        const missing = Math.max(0, CONFIG.sqmDealThreshold - (unitSqm * (rowsRaw[0]?.qty||1)));
+        if(unitSqm>0 && missing>0){ unitsToMeter = Math.ceil(missing / unitSqm); }
+      }
 
-      return { paper, rows, unitItems, totalSqm, totalUnits, regularSubtotal, projectSubtotal, tierPct, appliedMode, productsSubtotal, grandTotal, groupMinMessages };
+      return { isQuick, paper, rows, unitItems, totalSqm, totalUnits, unitSubtotal, sqmSubtotal, mode, productsSubtotal, grandTotal, groupMinMessages, unitsToMeter };
     }
 
+    // ======= ACTIONS =======
+    function moveQuickToSeries(){
+      const s = PRESET_MAP[State.quick.sizeKey] || PRESETS[0];
+      State.rows = [{ sizeKey: s.key, qty: Math.max(1, Math.round(+State.quick.qty||1)) }];
+      State.paperIdSeries = State.paperIdQuick;
+      switchTab('series');
+    }
+
+    // ======= RENDER =======
     function render(){
       const R = compute();
 
+      // series rows UI
       const rowsEl = el('#rows');
-      rowsEl.innerHTML = State.rows.map((row,idx)=> rowTemplate(row, idx, R.paper)).join('');
-      bindRowEvents();
+      if(rowsEl){ rowsEl.innerHTML = State.rows.map((row,idx)=> rowTemplate(row, idx, findPaper(State.paperIdSeries))).join(''); }
 
+      // sync quick controls UI
+      const pq = el('#paperQuick'); if(pq) pq.value = State.paperIdQuick;
+      buildQuickSizeOptions();
+      const qiq = el('#qtyQuick'); if(qiq) qiq.value = State.quick.qty;
+
+      // shared KPIs
       setText('#kpiSqm', `${R.totalSqm.toFixed(2)} מ"ר`);
       setText('#kpiUnits', `${R.totalUnits}`);
       setText('#kpiSqmPrice', money(R.paper.pricePerSqm));
-      const paperNameEl = el('#kpiPaperName');
-      if (paperNameEl) paperNameEl.textContent = R.paper.name;
+      const paperNameEl = el('#kpiPaperName'); if(paperNameEl) paperNameEl.textContent = R.paper.name;
 
+      // progress & hint (hidden in quick mode)
+      const pw = el('#progressWrap'); if(pw) pw.style.display = R.isQuick ? 'none' : '';
       const threshold = CONFIG.sqmDealThreshold;
-      const pct = Math.max(0, Math.min(1, R.totalSqm / threshold));
-      el('#progressBar').style.width = `${pct*100}%`;
-      el('#progressHint').innerHTML = R.appliedMode==='project'
-        ? `מצב פרויקט/סף מ"ר: החישוב לפי סה"כ מ״ר (מדרגה ${R.tierPct||0}%‑ אם רלוונטי).`
-        : `הגעת ל‑<b>${R.totalSqm.toFixed(2)} מ״ר</b> • חסרים עוד <b>${(threshold - R.totalSqm).toFixed(2)} מ״ר</b> לדיל למ״ר.`;
-
-      const totalHtml = `<div class="total"><span>סה"כ לתשלום</span><span class="mono">${fmtCurrency(R.grandTotal)} ${CONFIG.currency}</span></div>`;
-      let why = '';
-      if(R.appliedMode==='project'){
-        const reason = State.projectMode ? 'במצב פרויקט' : `כי עברתם ${CONFIG.sqmDealThreshold} מ״ר`;
-        const tier = R.tierPct ? ` (כולל מדרגה ${R.tierPct}%‎)` : '';
-        why = `חושב לפי <b>מ״ר</b> ${reason}${tier}.`;
+      const bar = el('#progressBar');
+      const hint = el('#progressHint');
+      if(!R.isQuick){
+        const pct = Math.max(0, Math.min(1, R.totalSqm/threshold));
+        if(bar) bar.style.width = `${pct*100}%`;
+        if(hint) hint.innerHTML = (R.mode==='sqm')
+          ? `החישוב לפי <b>מ"ר<\/b> כי עברתם 1 מ"ר.`
+          : `סה"כ <b>${R.totalSqm.toFixed(2)} מ״ר</b> • חסרים עוד <b>${(threshold - R.totalSqm).toFixed(2)} מ״ר</b> כדי להגיע ל‑1 מ"ר.`;
       } else {
-        why = `חושב <b>לפי יחידות</b> כי מתחת לסף ה־${CONFIG.sqmDealThreshold} מ״ר.`;
-      }
-      const otherSubtotal = (R.appliedMode==='regular') ? R.projectSubtotal : R.regularSubtotal;
-      const diffNow = Math.max(0, otherSubtotal - R.grandTotal);
-      const breakdownHtml = `
-        <div id="breakdown" style="display:none;margin-top:6px">
-          ${lineHTML('תמחור לפי יחידות', R.regularSubtotal)}
-          ${lineHTML(`תמחור לפי מ״ר${R.tierPct?` (כולל ${R.tierPct}%‎)`:''}`, R.projectSubtotal)}
-          ${diffNow>0 ? `<div class="note ok">החיסכון כעת: ${fmtCurrency(diffNow)} ${CONFIG.currency}</div>` : ''}
-        </div>`;
-      const toggleBtn = `<button class="btn inline" id="toggleBreakdown">הראה פירוט</button>`;
-      el('#pricesArea').innerHTML = totalHtml + `<div class="note note-lg">${why}</div>` + toggleBtn + breakdownHtml;
-
-      const tbtn = el('#toggleBreakdown');
-      if(tbtn){
-        tbtn.addEventListener('click', ()=>{
-          const box = el('#breakdown'); if(!box) return;
-          const open = box.style.display!=='none';
-          box.style.display = open ? 'none' : 'block';
-          tbtn.textContent = open ? 'הראה פירוט' : 'הסתר פירוט';
-        });
+        if(bar) bar.style.width = '0%';
+        if(hint) hint.textContent = '';
       }
 
-      const minMsgs = (R.appliedMode!=='project') ? R.groupMinMessages : [];
-      el('#minNotice').innerHTML = (minMsgs && minMsgs.length)
-        ? `<div class="alert" role="alert" aria-live="polite"><span class="ico" aria-hidden="true">💡</span><div class="text">${minMsgs.join('<br/>')}</div></div>`
-        : '';
+      // quick reach hint
+      const rh = el('#reachHintQuick'); if(rh){ rh.textContent = (R.isQuick && R.unitsToMeter) ? `עוד ${R.unitsToMeter} יח׳ בגודל שבחרתם ואתם ב‑1 מ"ר.` : ''; }
 
-      const tierEl = el('#tierLine');
-      const tiers = (R.paper.tiers||[]).slice().sort((a,b)=>a.min-b.min);
-      if (tiers.length) {
-        const [first, ...rest] = tiers;
-        let text = `בהזמנה של ${first.min} מ"ר תינתן הנחה של ${first.pct}%`;
-        if (rest.length) text += ' · ' + rest.map(t=>`${t.min} מ"ר – ${t.pct}%`).join(' · ');
-        tierEl.textContent = text;
-      } else tierEl.textContent = '';
-    }
+      // near‑meter suggestion (quick)
+      const near = el('#nearMeter'); const nearText = el('#nearText');
+      if(R.isQuick){
+        const nearCond = (R.totalSqm >= CONFIG.nearPct * CONFIG.sqmDealThreshold) ;
+        if(nearCond){
+          if(near) near.style.display = 'flex';
+          if(nearText){
+            const over = R.totalSqm >= CONFIG.sqmDealThreshold;
+            nearText.textContent = over
+              ? 'כמות זו סביב/מעל 1 מ"ר. מומלץ לעבור ל„מצב סדרות” לחישוב לפי שטח וניהול כמה שורות.'
+              : 'אתם מתקרבים ל‑1 מ"ר. שקלו „מצב סדרות” כדי לאחד הזמנה ולקבל חישוב לפי שטח.';
+          }
+        } else { if(near) near.style.display = 'none'; }
+      } else { if(near) near.style.display = 'none'; }
 
-    function lineHTML(label,amount){
-      return `<div class="price-line"><span class="flex">${label}</span><span class="mono">${fmtCurrency(amount)} ${CONFIG.currency}</span></div>`;
-    }
+      const minQ = el('#minNoticeQuick'); if(minQ){ minQ.innerHTML = (R.isQuick && R.groupMinMessages.length ? `<div class="alert"><span class="ico">💡</span><div class="text">${R.groupMinMessages.join('<br/>')}</div></div>` : ''); }
 
-    function saveAndRender(){ try{ localStorage.setItem('printCalcV2_4', JSON.stringify(State)); }catch(e){} render(); }
-    function resetAll(){ try{ localStorage.removeItem('printCalcV2_4'); }catch(e){} State.paperId='epson-luster'; State.projectMode=false; State.rows=[]; addRow(); saveAndRender(); }
+      // hide extras in quick mode
+      const kpiBox = document.querySelector('.kpi'); if(kpiBox){ kpiBox.style.display = R.isQuick ? 'none' : 'grid'; }
+      const quickCallout = el('#whyMeterQuick'); if(quickCallout){ quickCallout.style.display = R.isQuick ? 'none' : ''; }
+      const sumTitle = el('#summaryTitle'); if(sumTitle){ sumTitle.style.display = R.isQuick ? 'none' : ''; }
 
-    function shareWhatsApp(){
-      const R = compute();
-      const lines = [];
-      lines.push('הצעת מחיר להדפסה מסטודיו ארטסקאן');
-      lines.push(`נייר: ${R.paper.name} (בסיס ${R.paper.pricePerSqm} ${CONFIG.currency}/מ"ר)`);
-      R.rows.forEach((r,i)=>{
-        const key = `${r.w}x${r.h}`; const preset = PRESET_MAP[key]; const star = (preset && preset.minQty>0) ? ' *' : '';
-        lines.push(`שורה ${i+1}: ${r.w}×${r.h} ס"מ${star} × ${r.appliedQty} יח׳ (${(r.sqm*r.appliedQty).toFixed(2)} מ"ר)`);
-      });
-      lines.push(`סיכום: ${R.totalUnits} יח׳ • ${R.totalSqm.toFixed(2)} מ"ר`);
-      lines.push(`תמחור: ${R.appliedMode==='project'?'לפי מ"ר':'יחידתי'}`);
-      if(R.appliedMode==='project'){
-        if(R.tierPct) lines.push(`מדרגה: ${R.tierPct}%‑`);
-        const effSqm = R.totalSqm>0 ? Math.round(R.projectSubtotal / R.totalSqm) : 0;
-        lines.push(`מחיר אפקטיבי למ"ר: ${fmtCurrency(effSqm)} ${CONFIG.currency}`);
+      // total price
+      const pricesArea = el('#pricesArea');
+      if(pricesArea){
+        const totalHtml = `<div class="total"><span>סה"כ לתשלום</span><span class="mono">${fmtCurrency(R.grandTotal)} ${CONFIG.currency}</span></div>`;
+        if(R.isQuick){
+          pricesArea.innerHTML = totalHtml; // רק מחיר לתשלום
+        } else {
+          const why = (R.mode==='sqm') ? 'חושב לפי <b>מ״ר</b>.' : 'חושב <b>לפי יחידות</b>.';
+          pricesArea.innerHTML = totalHtml + `<div class="note note-lg">${why}</div>`;
+        }
       }
-      const avgUnit = R.totalUnits>0 ? Math.round(R.grandTotal / R.totalUnits) : 0;
-      lines.push(`מחיר ממוצע ליח׳: ${fmtCurrency(avgUnit)} ${CONFIG.currency}`);
-      lines.push(`סה"כ לתשלום: ${fmtCurrency(R.grandTotal)} ${CONFIG.currency}`);
-      lines.push('—');
-      lines.push('*גדלים עם כוכבית בעלי מינימום הזמנה 4 יח׳ (במצב פרויקט אין מינימום).');
-      const text = encodeURIComponent(lines.join('\n'));
-      const url = `https://wa.me/?text=${text}`;
-      const w = window.open(url,'_blank','noopener'); if (w) w.opener = null;
+
+      // minimums notice (series tab only)
+      const minEl = el('#minNotice');
+      if(minEl){ minEl.innerHTML = (R.isQuick ? '' : (R.groupMinMessages.length ? `<div class="alert"><span class="ico">💡</span><div class="text">${R.groupMinMessages.join('<br/>')}</div></div>` : '')); }
     }
 
-    function renderOnce(){
-      const saved = localStorage.getItem('printCalcV2_4');
-      if(saved){ try{ Object.assign(State, JSON.parse(saved)||{}); }catch(e){} }
-      if(!State.rows.length) addRow();
-      render();
+    // ======= PERSIST & BOOT =======
+    function saveAndRender(){ try{ localStorage.setItem('printCalcV2_modes', JSON.stringify(State)); }catch(e){} render(); }
+
+    function load(){
+      const saved = localStorage.getItem('printCalcV2_modes');
+      if(saved){ try{ Object.assign(State, DEFAULT_STATE(), JSON.parse(saved)||{}); }catch(e){} }
+      if(!State.quick.sizeKey) State.quick.sizeKey = PRESETS[0].key;
+      if(!State.rows.length) State.rows.push({ sizeKey: PRESETS[0].key, qty: 1 });
     }
 
-    // ======= BOOT =======
-    renderOnce();
+    load();
     initUI();
   })();
   </script>
+</body>
+</html>
+
 </body>
 </html>
